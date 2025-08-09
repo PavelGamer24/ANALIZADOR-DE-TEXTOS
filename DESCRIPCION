@@ -1,0 +1,14 @@
+📖 Descripción
+Este proyecto implementa un bot de Discord capaz de recibir imágenes enviadas por los usuarios, procesarlas y clasificarlas utilizando un modelo de aprendizaje automático entrenado con TensorFlow/Keras.
+
+El bot funciona de la siguiente manera:
+
+El usuario envía una imagen a través de un comando específico en Discord.
+
+El bot guarda la imagen en una carpeta local y la preprocesa para adaptarla al formato esperado por el modelo.
+
+El modelo realiza la inferencia y devuelve la clase predicha junto con el porcentaje de confianza.
+
+Si ocurre algún problema (archivo no válido, error en el modelo, formato no compatible), el bot notifica claramente el error al usuario.
+
+Este sistema es ideal para integrar inteligencia artificial en comunidades de Discord, permitiendo tareas como reconocimiento de objetos, clasificación de imágenes personalizadas o cualquier aplicación que requiera inferencia en tiempo real.
