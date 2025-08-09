@@ -1,0 +1,75 @@
+import discord
+from discord.ext import commands
+import os
+import uuid
+import numpy as np
+from PIL import Image
+import tensorflow as tf
+
+# ==== CONFIGURACIÓN ====
+IMAGES_DIR = 'imagenes'
+os.makedirs(IMAGES_DIR, exist_ok=True)
+
+MODEL_PATH = 'modelo_entrenado.h5'  # Ruta a tu modelo
+IMG_SIZE = (224, 224)  # Ajusta al tamaño esperado por tu modelo
+
+# ==== CARGA DEL MODELO ====
+try:
+    model = tf.keras.models.load_model(MODEL_PATH)
+    print("✅ Modelo cargado correctamente.")
+except Exception as e:
+    print(f"❌ Error al cargar el modelo: {e}")
+    model = None
+
+# ==== BOT ====
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+@bot.event
+async def on_ready():
+    print(f'✅ Bot conectado como {bot.user}')
+
+@bot.command(name='clasificar')
+async def clasificar(ctx):
+    """Comando para subir imagen y clasificarla con el modelo."""
+    if model is None:
+        await ctx.send("❌ El modelo no está disponible actualmente.")
+        return
+
+    attachments = ctx.message.attachments
+    if not attachments:
+        await ctx.send("❌ No se detectó ninguna imagen adjunta. Por favor, sube una imagen.")
+        return
+
+    for attachment in attachments:
+        if not any(attachment.filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png']):
+            await ctx.send(f"⚠️ El archivo `{attachment.filename}` no es un formato de imagen válido.")
+            continue
+
+        try:
+            # Guardar imagen temporalmente
+            unique_filename = f"{uuid.uuid4().hex}_{attachment.filename}"
+            filepath = os.path.join(IMAGES_DIR, unique_filename)
+            await attachment.save(filepath)
+
+            # Preprocesar imagen
+            img = Image.open(filepath).convert('RGB')
+            img = img.resize(IMG_SIZE)
+            img_array = np.array(img) / 255.0
+            img_array = np.expand_dims(img_array, axis=0)  # Batch de 1 imagen
+
+            # Inferencia
+            predictions = model.predict(img_array)
+            predicted_class = np.argmax(predictions, axis=1)[0]
+            confidence = float(np.max(predictions))
+
+            # Respuesta al usuario
+            await ctx.send(f"🖼 Imagen `{attachment.filename}` clasificada como **Clase {predicted_class}** "
+                           f"(confianza: {confidence:.2%})")
+
+        except Exception as e:
+            await ctx.send(f"❌ Ocurrió un error al procesar `{attachment.filename}`: {e}")
+
+# Token del bot
+bot.run("TOKEN")
